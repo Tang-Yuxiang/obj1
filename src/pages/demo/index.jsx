@@ -85,13 +85,8 @@ const demo = () => {
       //   let receipt = await tx.wait();
       //   console.log("receipt", receipt);
 
-      // The Contract object
-      const daiContract = await new ethers.Contract(
-        daiAddress,
-        stakeAbi,
-        signer
-      );
-      console.log(daiContract.address, "daiContract.address ");
+      const daiContract = new ethers.Contract(daiAddress, stakeAbi, signer);
+      console.log(daiContract.target , "daiContract.address ");
       let startBlock = await daiContract.startBlock();
       console.log(startBlock, "startBlock");
       const code = await provider.getCode(daiAddress);
@@ -111,7 +106,6 @@ const demo = () => {
 
       let gasPrice = await provider.getFeeData();
       console.log("gasPrice", gasPrice);
-  
     }
   };
   return (

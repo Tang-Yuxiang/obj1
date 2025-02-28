@@ -18,6 +18,10 @@ const Header = () => {
       name: "Demo",
       path: "/demo",
     },
+    {
+      name: "wagmiDemo",
+      path: "/wagmiDemo",
+    },
   ];
   return (
     <div>
