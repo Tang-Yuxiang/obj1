@@ -39,34 +39,52 @@ const Home = () => {
   const [amount, setAmount] = useState("0");
   const { address, isConnected } = useAccount();
   const [loading, setLoading] = useState(false);
-  const handleUnStake = () => {};
+  const [unStakeLoading, setUnstakeLoading] = useState(false);
+  const handleUnStake = async () => {
+    if (!stakeContract) return;
+    try {
+      setUnstakeLoading(true)
+      const tx = await stakeContract.unstake(0, parseUnits(amount, 18))
+      if(tx.wait){
+        const res=await tx.wait();
+        console.log('res',res)
+
+        getUserInfo()
+        setUnstakeLoading(false)
+      }
+   
+   
+    } catch (error) {
+      setUnstakeLoading(false)
+      console.log(error, 'stake-error')
+    }
+  }
   const handleWithdraw = () => {};
   const [StakedAmount, setStakedAmount] = useState("0");
   const [signer, setSigner] = useState<any>(null);
   const stakeContract = useStakeContract(signer);
   const [userData, setUserData] = useState<UserStakeData>(InitData);
 
-  const getStakedAmount = async () => {
-    const res = await stakeContract?.stakingBalance(0, address);
-    setStakedAmount(formatUnits(res as bigint, 18));
-  };
   const getUserInfo = async () => {
-    console.log('address',address)
-    const stakeBlannce = await stakeContract?.stakingBalance(0, address);
-    const [requestAmount, pendingWithdrawAmount] =
-      await stakeContract?.withdrawAmount(0, address);
+    if (!stakeContract || !address) return;  // Ensure that stakeContract and address are available
 
-    const ava = Number(formatUnits(pendingWithdrawAmount, 18));
-    const p = Number(formatUnits(requestAmount, 18));
-    // setStakedAmount(formatUnits(res as bigint, 18));
+    console.log('Fetching user info for address:', address);
+    const stakeBalance = await stakeContract?.stakingBalance(0, address);
+    const [requestAmount, pendingWithdrawAmount] = await stakeContract?.withdrawAmount(0, address);
+
+    const available = Number(formatUnits(pendingWithdrawAmount, 18));
+    const totalRequested = Number(formatUnits(requestAmount, 18));
+    let staked=formatUnits(stakeBalance as bigint, 18)
     setUserData({
-      staked: formatUnits(stakeBlannce as bigint, 18),
-      withdrawPending: (p - ava).toFixed(4),
-      withdrawable: ava.toString(),
+      staked,
+      withdrawPending: (totalRequested - available).toFixed(4),
+      withdrawable: available.toString(),
     });
     console.log(userData);
   };
+
   useEffect(() => {
+    // This effect is only triggered when the address changes.
     if (address) {
       const provider1 = new ethers.BrowserProvider(window.ethereum);
       const fetchSigner = async () => {
@@ -75,13 +93,13 @@ const Home = () => {
       };
       fetchSigner();
     }
-  }, [address]);
+  }, [address]);  // Only depend on `address`, not `signer`
 
   useEffect(() => {
-    if (signer) {
+    if (signer && address) {
       getUserInfo();
     }
-  }, [signer]);
+  }, [signer, address]);  // Depend on `signer` and `address` to trigger `getUserInfo`
   return (
     <Box
       display={"flex"}
@@ -111,7 +129,7 @@ const Home = () => {
                 <Box>Staked Amount: </Box>
                 <Box m={"0 auto"} textAlign={"center"}>
                   {" "}
-                  {StakedAmount} ETH
+                  {userData.staked} ETH
                 </Box>
               </Box>
             </Grid>
@@ -120,7 +138,7 @@ const Home = () => {
                 <Box>Available to withdraw</Box>
                 <Box m={"0 auto"} textAlign={"center"}>
                   {" "}
-                  {0} ETH
+                  {userData.withdrawable} ETH
                 </Box>
               </Box>
             </Grid>
@@ -129,7 +147,7 @@ const Home = () => {
                 <Box>Pending Withdraw:</Box>
                 <Box m={"0 auto"} textAlign={"center"}>
                   {" "}
-                  {0} ETH
+                  {userData.withdrawPending} ETH
                 </Box>
               </Box>
             </Grid>
@@ -155,7 +173,7 @@ const Home = () => {
           ) : (
             <LoadingButton
               variant="contained"
-              loading={loading}
+              loading={unStakeLoading}
               onClick={handleUnStake}
             >
               UnStake

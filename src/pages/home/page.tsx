@@ -10,37 +10,34 @@ import {
   useWalletClient,
   useBalance,
   useReadContract,
-  useWriteContract,
+  useWriteContract,useConnect
 } from "wagmi";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { Contract } from "ethers";
 import { formatUnits } from "viem";
-import {useStakeContract} from "../hooks/useStakeContract";
-import { ethers, formatEther, parseEther,parseUnits } from "ethers";
+import { useStakeContract } from "../hooks/useStakeContract";
+import { ethers, formatEther, parseEther, parseUnits } from "ethers";
 import path from "path";
 const Home = () => {
   const [amount, setAmount] = useState("0");
   const { address, isConnected } = useAccount();
-  const { data:balanceData} = useBalance({ address });
+  const { data: balanceData } = useBalance({ address });
   const [loading, setLoading] = useState(false);
-  const [StakedAmount, setStakedAmount] = useState('0');
+  const [chainId, setNetworkId] = useState(null);
+  const [StakedAmount, setStakedAmount] = useState("0");
   const [signer, setSigner] = useState<any>(null);
   const [provider, setProvider] = useState<any>(null);
   const [contract, setContract] = useState<any>(null);
-  const stakeContract=useStakeContract(signer);
-  const getStakedAmount =async () => {
-    // if (address && stakeContract) {
-      // const res = await stakeContract?.read.poolLength();
-      // const res = await stakeContract?.stakingBalance([0, address])
-      const res = await stakeContract?.stakingBalance(0, address);
-      // setStakedAmount(formatUnits(res as bigint, 18))
-      console.log(formatUnits(res as bigint, 18),'getStakedAmount','address',address)
-      setStakedAmount(formatUnits(res as bigint, 18))
-    // }
-  }
+  const stakeContract = useStakeContract(signer);
+  const { connect } = useConnect()
+  const getStakedAmount = async () => {
+    const res = await stakeContract?.stakingBalance(0, address);
+    console.log("res", res);
+    setStakedAmount(formatUnits(res as bigint, 18));
+  };
   useEffect(() => {
-
     // 检查 window 是否可用，确保代码只在客户端执行
+    console.log("切换地址", address);
     if (typeof window !== "undefined" && window.ethereum) {
       const provider1 = new ethers.BrowserProvider(window.ethereum);
       setProvider(provider1);
@@ -50,43 +47,55 @@ const Home = () => {
       };
       fetchSigner();
     }
-    if(address){
-      getStakedAmount()
+
+    // getStakedAmount()
+    // getStakedAmount()
+  }, []);
+
+  useEffect(() => {
+    if (signer && address) {
+      getStakedAmount();
     }
-    // getStakedAmount()
-    // getStakedAmount()
-  }, [address]); // 只在组件首次
+  }, [signer, address]);
+
+  useEffect(() => {
+    if (provider) {
+      provider.getNetwork().then((network: { chainId: any; }) => {
+        setNetworkId(network.chainId);  // 获取当前网络 ID
+        console.log(network,'network')
+      });
+    }
+  }, [provider]);
   const handleStake = async () => {
- 
-    try{
-      setLoading(true)
+    try {
+      setLoading(true);
       // console.log(balanceData)
-      var isLess=false;
+      var isLess = false;
       if (balanceData) {
         const { formatted } = balanceData;
         if (parseFloat(formatted) < parseFloat(amount)) {
           console.log("balanceData is less than amount");
-          isLess=true;
-          setLoading(false)
+          isLess = true;
+          setLoading(false);
         }
       }
-      if(isLess) return
-      const tx=await stakeContract?.depositETH({value:parseUnits(amount,18),});
-      if(tx.wait){
-        const res=await tx.wait();
-        console.log('res',res)
+      if (isLess) return;
+      const tx = await stakeContract?.depositETH({
+        value: parseUnits(amount, 18),
+      });
+      if (tx.wait) {
+        const res = await tx.wait();
+        console.log("res", res);
 
-        getStakedAmount()
-        setLoading(false)
+        getStakedAmount();
+        setLoading(false);
       }
-
-    }catch(e){
-      setLoading(false)
-      console.log(e)
+    } catch (e) {
+      setLoading(false);
+      console.log(e);
     }
   };
 
-  
   return (
     <Box
       display={"flex"}
