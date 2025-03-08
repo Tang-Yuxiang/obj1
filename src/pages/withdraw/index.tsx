@@ -59,7 +59,23 @@ const Home = () => {
       console.log(error, 'stake-error')
     }
   }
-  const handleWithdraw = () => {};
+  const handleWithdraw = async () => {
+    try {
+      setLoading(true)
+      const tx = await stakeContract?.withdraw(0)
+      console.log(tx, 'withdraw-res')
+      if(tx.wait){
+        const res=await tx.wait();
+        console.log('res',res)
+        setLoading(false)
+        getUserInfo()
+      }
+    } catch (error) {
+      setLoading(false)
+      console.log(error, 'stake-error')
+    }
+
+  };
   const [StakedAmount, setStakedAmount] = useState("0");
   const [signer, setSigner] = useState<any>(null);
   const stakeContract = useStakeContract(signer);
@@ -182,7 +198,7 @@ const Home = () => {
         </Box>
 
         <Box sx={{ fontSize: "20px", mb: "10px", mt: "40px" }}>Withdraw</Box>
-        <Box> Ready Amount: {1} </Box>
+        <Box> Ready Amount: {userData.withdrawable}  </Box>
         <Typography fontSize={"14px"} color={"#888"}>
           After unstaking, you need to wait 20 minutes to withdraw.
         </Typography>
@@ -190,7 +206,7 @@ const Home = () => {
           sx={{ mt: "20px" }}
           disabled={false}
           variant="contained"
-          loading={false}
+          loading={loading}
           onClick={handleWithdraw}
         >
           Withdraw

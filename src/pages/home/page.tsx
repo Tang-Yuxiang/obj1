@@ -10,7 +10,8 @@ import {
   useWalletClient,
   useBalance,
   useReadContract,
-  useWriteContract,useConnect
+  useWriteContract,
+  useConnect,
 } from "wagmi";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { Contract } from "ethers";
@@ -29,7 +30,7 @@ const Home = () => {
   const [provider, setProvider] = useState<any>(null);
   const [contract, setContract] = useState<any>(null);
   const stakeContract = useStakeContract(signer);
-  const { connect } = useConnect()
+  const { connect } = useConnect();
   const getStakedAmount = async () => {
     const res = await stakeContract?.stakingBalance(0, address);
     console.log("res", res);
@@ -59,13 +60,10 @@ const Home = () => {
   }, [signer, address]);
 
   useEffect(() => {
-    if (provider) {
-      provider.getNetwork().then((network: { chainId: any; }) => {
-        setNetworkId(network.chainId);  // 获取当前网络 ID
-        console.log(network,'network')
-      });
+    if (connect) {
+      connect;
     }
-  }, [provider]);
+  }, [connect]);
   const handleStake = async () => {
     try {
       setLoading(true);
